@@ -160,25 +160,20 @@ function applyCostVisibility(){
     el.style.display = costsVisible ? '' : 'none';
   });
 
-  const btn = $('costVisibilityBtn');
-  if(btn){
-    btn.textContent = costsVisible ? '🙈 Ocultar costos' : '👁️ Mostrar costos';
-  }
-}
-
-function toggleFixedCostMask(){
   costIds.forEach(id=>{
     const input = $(id);
-    if(input) input.style.webkitTextSecurity = costsVisible ? 'none' : 'disc';
+    if(input){
+      input.style.webkitTextSecurity = costsVisible ? 'none' : 'disc';
+    }
   });
+
+  const btn = $('costVisibilityBtn');
+  if(btn) btn.textContent = costsVisible ? '🙈 Ocultar costos' : '👁️ Mostrar costos';
 }
 
 function toggleCostVisibility(){
   costsVisible = !costsVisible;
   localStorage.setItem('calculadora3d_costsVisible', costsVisible ? 'true' : 'false');
-
-  // Oculta/muestra los valores de los campos de costos fijos.
-  toggleFixedCostMask();
   applyCostVisibility();
 }
 
@@ -249,7 +244,6 @@ load();
 setCostInputs(false);
 calculate();
 applyCostVisibility();
-toggleFixedCostMask();
 
 /* Instalación PWA */
 let deferredPrompt = null;
