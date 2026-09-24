@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Calculadora 3D</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f3f5f8; --card:#fff; --ink:#111827; --muted:#68707d;
+  --blue:#2f67e8; --green:#087d62; --purple:#7435d7;
+  --line:#e0e2e6; --soft:#e9eaed;
+}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+.app{max-width:720px;margin:0 auto;padding:28px 22px 40px}
+header{text-align:center;margin-bottom:25px}
+header h1{font-size:36px;margin:0 0 8px;font-weight:800;letter-spacing:-1px}
+header p{font-size:24px;color:#6c7380;margin:0}
+.card{background:var(--card);border-radius:32px;padding:30px 34px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,.025)}
+.section-title{font-size:26px;font-weight:800;margin:0 0 22px;display:flex;align-items:center;gap:9px}
+.fields{display:grid;grid-template-columns:1fr;gap:17px}
+.field label{display:block;font-size:20px;font-weight:750;margin:0 0 9px}
+input{width:100%;height:62px;border:1px solid #d5d7db;border-radius:22px;padding:0 26px;font-size:23px;background:#f8f8fa;color:#1b2430;outline:none}
+input:focus{border:2px solid #8aaaf5;background:#fff}
+.fixed input{color:#606976;background:#f0f1f3}
+.helper{font-size:18px;line-height:1.25;color:#707783;margin-top:11px}
+.actions{margin-top:25px}
+button{width:100%;height:74px;border:0;border-radius:22px;font-size:25px;font-weight:800;cursor:pointer}
+.calc{background:var(--blue);color:#fff}
+.clear{background:#e5e6e9;color:#151b25;margin-top:16px}
+.edit{background:#e5e6e9;color:#151b25}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.result-card{border:1px solid #e3e5e8;border-radius:20px;padding:17px 15px;background:#fff;min-width:0}
+.result-card h3{font-size:19px;line-height:1.12;margin:0 0 14px}
+.rrow{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #ececef;padding:9px 0;font-size:15px}
+.rrow:last-child{border-bottom:0}
+.rrow span{color:#3e4651}.rrow b{white-space:nowrap}
+.cost-title{font-size:25px;font-weight:900;color:var(--green);line-height:1.08;margin:17px 0 11px}
+.profit{font-size:15px;padding-top:11px;border-top:1px solid #ececef}
+.sale{font-size:25px;font-weight:900;color:var(--purple);line-height:1.08;margin-top:13px}
+.perpiece{font-size:15px;font-weight:800;margin-top:13px;padding-top:11px;border-top:1px solid #ececef}
+.total-result{margin-top:16px;padding:15px;border-radius:16px;background:#f5f2fb}
+.total-result b{color:var(--purple);font-size:25px}
+.note{text-align:center;color:#7a808a;font-size:16px;margin:4px 0 0}
+.small{font-size:13px;color:#737985;line-height:1.4;margin-top:10px}
+.overlay{display:none;position:fixed;inset:0;background:#0007;z-index:20;padding:18px;overflow:auto}
+.modal{max-width:600px;margin:30px auto;background:#fff;border-radius:26px;padding:26px}
+.modal h2{margin:0 0 20px;font-size:25px}.modal .field{margin-bottom:15px}
+.close{background:#e5e6e9;color:#111;margin-top:12px}
+@media(max-width:650px){
+ .app{padding:24px 20px 36px}
+ header h1{font-size:34px} header p{font-size:23px}
+ .card{border-radius:31px;padding:27px 33px}
+ .result-grid{grid-template-columns:1fr}
+ .result-card{padding:20px}
+ .result-card h3{font-size:21px}
+ .field label{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Calculadora 3D</h1>
+  <p>Costo y precio de venta</p>
+</header>
+
+<section class="card fixed">
+  <h2 class="section-title">🔒 Costos fijos</h2>
+  <div class="fields">
+    <div class="field">
+      <label>PLA Normal ($ / kg)</label>
+      <input id="pla" type="number" value="21000" min="0" step="100" disabled>
+    </div>
+    <div class="field">
+      <label>PLA Silk ($ / kg)</label>
+      <input id="silk" type="number" value="26000" min="0" step="100" disabled>
+    </div>
+    <div class="field">
+      <label>PLA Oro Perla ($ / kg)</label>
+      <input id="pearl" type="number" value="30000" min="0" step="100" disabled>
+    </div>
+    <div class="field">
+      <label>Electricidad ($ / kWh)</label>
+      <input id="electricity" type="number" value="300" min="0" step="1" disabled>
+    </div>
+    <div class="field">
+      <label>Desgaste de impresora (%)</label>
+      <input id="wear" type="number" value="40" min="0" step="1" disabled>
+    </div>
+    <div class="field">
+      <label>Rentabilidad (%)</label>
+      <input id="profit" type="number" value="100" min="0" step="1" disabled>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="editBtn" class="edit" onclick="toggleCostEdit()">⚙️ Editar costos</button>
+  </div>
+  <div id="lockMsg" class="helper">🔒 Costos bloqueados. Tocá "Editar costos" para modificarlos.</div>
+</section>
+
+<section class="card">
+  <h2 class="section-title">🖨️ Esta impresión</h2>
+  <div class="fields">
+    <div class="field">
+      <label>Filamento utilizado (g)</label>
+      <input id="grams" type="number" value="100" min="0" step="1">
+    </div>
+    <div class="field">
+      <label>Tiempo (horas)</label>
+      <input id="hours" type="number" value="4" min="0" step="0.1">
+    </div>
+    <div class="field">
+      <label>Cantidad de piezas</label>
+      <input id="pieces" type="number" value="1" min="1" step="1">
+    </div>
+  </div>
+  <div class="helper">Los gramos y las horas corresponden a toda la impresión/pedido.</div>
+  <div class="actions">
+    <button class="calc" onclick="calculate()">🧮 Calcular</button>
+    <button class="clear" onclick="clearPrint()">Limpiar</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2 class="section-title">💰 Resultado</h2>
+  <div id="results" class="result-grid"></div>
+</section>
+
+<p class="note">Los costos fijos se guardan solamente en este dispositivo.</p>
+</div>
+
+
+
+<script>
+const ids=['pla','silk','pearl','electricity','wear','profit','grams','hours','pieces'];
+const $=id=>document.getElementById(id);
+const money=n=>'$'+Math.round(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function val(id){return Number($(id).value)||0}
+function save(){
+  const o={}; ids.forEach(id=>o[id]=$(id).value);
+  localStorage.setItem('calculadora3d_v2',JSON.stringify(o));
+}
+function load(){
+  try{
+    const o=JSON.parse(localStorage.getItem('calculadora3d_v2')||'null');
+    if(o) ids.forEach(id=>{if(o[id]!==undefined) $(id).value=o[id]});
+  }catch(e){}
+}
+function calculate(){
+  save();
+  const g=val('grams'), h=val('hours'), qty=Math.max(1,val('pieces'));
+  const electricity=val('electricity');
+  const wearPct=val('wear')/100;
+  const profitPct=val('profit')/100;
+
+  // Consumo estimado de la impresora: 0,12 kW.
+  // El desgaste se aplica sobre el costo directo de impresión (filamento + electricidad).
+  const electricityCost=h*0.12*electricity;
+
+  const mats=[
+    ['PLA Normal',val('pla')],
+    ['PLA Silk',val('silk')],
+    ['PLA Oro Perla',val('pearl')]
+  ];
+
+  document.getElementById('results').innerHTML=mats.map(([name,kg])=>{
+    const filament=g*kg/1000;
+    const direct=filament+electricityCost;
+    const wear=direct*wearPct;
+    const production=direct+wear;
+    const gain=production*profitPct;
+    const sale=production+gain;
+    const perPiece=sale/qty;
+    return `<div class="result-card">
+      <h3>${name}</h3>
+      <div class="rrow"><span>🧵 Filamento</span><b>${money(filament)}</b></div>
+      <div class="rrow"><span>⚡ Electricidad</span><b>${money(electricityCost)}</b></div>
+      <div class="rrow"><span>🖨️ Desgaste</span><b>${money(wear)}</b></div>
+      <div class="cost-title">COSTO DE<br>PRODUCCIÓN<br><span style="color:var(--green)">${money(production)}</span></div>
+      <div class="profit">📈 Ganancia <b style="float:right">${money(gain)}</b></div>
+      <div class="sale">💰 PRECIO AL<br>CLIENTE<br><span>${money(sale)}</span></div>
+      <div class="perpiece">🏷️ Precio por pieza <b style="float:right">${money(perPiece)}</b></div>
+    </div>`;
+  }).join('');
+}
+function clearPrint(){
+  $('grams').value=0;$('hours').value=0;$('pieces').value=1;calculate();
+}
+const costIds=['pla','silk','pearl','electricity','wear','profit'];
+let editingCosts=false;
+
+function setCostInputs(enabled){
+  costIds.forEach(id=>$(id).disabled=!enabled);
+  $('editBtn').textContent=enabled?'🔒 Guardar y bloquear':'⚙️ Editar costos';
+  $('lockMsg').textContent=enabled
+    ? '✏️ Costos desbloqueados. Modificá los valores y tocá "Guardar y bloquear".'
+    : '🔒 Costos bloqueados. Tocá "Editar costos" para modificarlos.';
+}
+
+function toggleCostEdit(){
+  if(!editingCosts){
+    editingCosts=true;
+    setCostInputs(true);
+    $('pla').focus();
+  }else{
+    save();
+    editingCosts=false;
+    setCostInputs(false);
+    calculate();
+  }
+}
+
+function cancelCostEdit(){
+  load();
+  editingCosts=false;
+  setCostInputs(false);
+  calculate();
+}
+
+ids.forEach(id=>$(id).addEventListener('input',()=>{ if(!costIds.includes(id)) save(); }));
+load();
+setCostInputs(false);
+calculate();
+</script>
+</body>
+</html>
