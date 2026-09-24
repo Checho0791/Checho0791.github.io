@@ -50,10 +50,7 @@ button{width:100%;height:74px;border:0;border-radius:22px;font-size:25px;font-we
 .sale{font-size:25px;font-weight:900;color:var(--purple);line-height:1.08;margin-top:13px}
 .perpiece{font-size:15px;font-weight:800;margin-top:13px;padding-top:11px;border-top:1px solid #ececef}
 .note{text-align:center;color:#7a808a;font-size:16px;margin:4px 0 0}
-.visibility-row{display:flex;gap:12px;margin:-7px 0 18px}
-.visibility-btn{height:52px!important;border-radius:17px!important;font-size:18px!important;background:#eef0f3;color:#202735}
-.cost-hidden{color:transparent!important;background:#dfe2e7;border-radius:7px;user-select:none}
-
+.cost-toggle{width:100%;height:58px;border:0;border-radius:18px;background:#eef1f5;color:#1f2937;font-size:20px;font-weight:800;cursor:pointer;margin-bottom:18px}
 @media(max-width:650px){
  .app{padding:24px 20px 36px}
  header h1{font-size:34px} header p{font-size:23px}
@@ -74,33 +71,31 @@ button{width:100%;height:74px;border:0;border-radius:22px;font-size:25px;font-we
 
 <section class="card fixed">
   <h2 class="section-title">🔒 Costos fijos</h2>
-  <div class="visibility-row">
-    <button id="visibilityBtn" class="visibility-btn" onclick="toggleCostsVisibility()">🙈 Ocultar costos</button>
-  </div>
+  <button id="costVisibilityBtn" class="cost-toggle" type="button" onclick="toggleCostVisibility()">🙈 Ocultar costos</button>
   <div class="fields">
     <div class="field">
       <label>PLA Normal ($ / kg)</label>
-      <input id="pla" data-cost-input="true" type="number" value="21000" min="0" step="100" disabled>
+      <input id="pla" type="number" value="21000" min="0" step="100" disabled>
     </div>
     <div class="field">
       <label>PLA Silk ($ / kg)</label>
-      <input id="silk" data-cost-input="true" type="number" value="26000" min="0" step="100" disabled>
+      <input id="silk" type="number" value="26000" min="0" step="100" disabled>
     </div>
     <div class="field">
       <label>PLA Oro Perla ($ / kg)</label>
-      <input id="pearl" data-cost-input="true" type="number" value="30000" min="0" step="100" disabled>
+      <input id="pearl" type="number" value="30000" min="0" step="100" disabled>
     </div>
     <div class="field">
       <label>Electricidad ($ / kWh)</label>
-      <input id="electricity" data-cost-input="true" type="number" value="300" min="0" step="1" disabled>
+      <input id="electricity" type="number" value="300" min="0" step="1" disabled>
     </div>
     <div class="field">
       <label>Desgaste de impresora (%)</label>
-      <input id="wear" data-cost-input="true" type="number" value="40" min="0" step="1" disabled>
+      <input id="wear" type="number" value="40" min="0" step="1" disabled>
     </div>
     <div class="field">
       <label>Rentabilidad (%)</label>
-      <input id="profit" data-cost-input="true" type="number" value="100" min="0" step="1" disabled>
+      <input id="profit" type="number" value="100" min="0" step="1" disabled>
     </div>
   </div>
   <div class="actions">
@@ -135,9 +130,6 @@ button{width:100%;height:74px;border:0;border-radius:22px;font-size:25px;font-we
 
 <section class="card">
   <h2 class="section-title">💰 Resultado</h2>
-  <div class="visibility-row">
-    <button id="resultVisibilityBtn" class="visibility-btn" onclick="toggleCostsVisibility()">🙈 Ocultar importes de costos</button>
-  </div>
   <div id="results" class="result-grid"></div>
 </section>
 
@@ -163,26 +155,31 @@ function load(){
 
 let costsVisible = localStorage.getItem('calculadora3d_costsVisible') !== 'false';
 
-function applyCostsVisibility(){
-  document.querySelectorAll('.cost-value').forEach(el=>{
-    el.classList.toggle('cost-hidden', !costsVisible);
-  });
-  document.querySelectorAll('[data-cost-input="true"]').forEach(el=>{
-    // Fixed cost fields are also hidden visually, but remain usable for calculations.
-    el.style.color = costsVisible ? '' : 'transparent';
-    el.style.caretColor = costsVisible ? '' : 'transparent';
+function applyCostVisibility(){
+  document.querySelectorAll('.private-cost').forEach(el=>{
+    el.style.display = costsVisible ? '' : 'none';
   });
 
-  const text = costsVisible ? '🙈 Ocultar costos' : '👁️ Mostrar costos';
-  const resultText = costsVisible ? '🙈 Ocultar importes de costos' : '👁️ Mostrar importes de costos';
-  $('visibilityBtn').textContent = text;
-  $('resultVisibilityBtn').textContent = resultText;
+  const btn = $('costVisibilityBtn');
+  if(btn){
+    btn.textContent = costsVisible ? '🙈 Ocultar costos' : '👁️ Mostrar costos';
+  }
 }
 
-function toggleCostsVisibility(){
+function toggleFixedCostMask(){
+  costIds.forEach(id=>{
+    const input = $(id);
+    if(input) input.style.webkitTextSecurity = costsVisible ? 'none' : 'disc';
+  });
+}
+
+function toggleCostVisibility(){
   costsVisible = !costsVisible;
-  localStorage.setItem('calculadora3d_costsVisible', String(costsVisible));
-  applyCostsVisibility();
+  localStorage.setItem('calculadora3d_costsVisible', costsVisible ? 'true' : 'false');
+
+  // Oculta/muestra los valores de los campos de costos fijos.
+  toggleFixedCostMask();
+  applyCostVisibility();
 }
 
 function calculate(){
@@ -207,11 +204,11 @@ function calculate(){
     const perPiece=sale/qty;
     return `<div class="result-card">
       <h3>${name}</h3>
-      <div class="rrow cost-value"><span>🧵 Filamento</span><b>${money(filament)}</b></div>
-      <div class="rrow cost-value"><span>⚡ Electricidad</span><b>${money(electricityCost)}</b></div>
-      <div class="rrow cost-value"><span>🖨️ Desgaste</span><b>${money(wear)}</b></div>
-      <div class="cost-title cost-value">COSTO DE<br>PRODUCCIÓN<br><span style="color:var(--green)">${money(production)}</span></div>
-      <div class="profit cost-value">📈 Ganancia <b style="float:right">${money(gain)}</b></div>
+      <div class="rrow private-cost"><span>🧵 Filamento</span><b>${money(filament)}</b></div>
+      <div class="rrow private-cost"><span>⚡ Electricidad</span><b>${money(electricityCost)}</b></div>
+      <div class="rrow private-cost"><span>🖨️ Desgaste</span><b>${money(wear)}</b></div>
+      <div class="cost-title private-cost">COSTO DE<br>PRODUCCIÓN<br><span style="color:var(--green)">${money(production)}</span></div>
+      <div class="profit private-cost">📈 Ganancia <b style="float:right">${money(gain)}</b></div>
       <div class="sale">💰 PRECIO AL<br>CLIENTE<br><span>${money(sale)}</span></div>
       <div class="perpiece">🏷️ Precio por pieza <b style="float:right">${money(perPiece)}</b></div>
     </div>`;
@@ -251,7 +248,8 @@ ids.forEach(id=>$(id).addEventListener('input',()=>{ if(!costIds.includes(id)) s
 load();
 setCostInputs(false);
 calculate();
-applyCostsVisibility();
+applyCostVisibility();
+toggleFixedCostMask();
 
 /* Instalación PWA */
 let deferredPrompt = null;
